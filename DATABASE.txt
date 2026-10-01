@@ -1,0 +1,10 @@
+This Core PHP version uses the same MySQL database name/structure as the working F-Taxi Accounts application:
+f_taxi_accounts
+
+Default local connection:
+Host: 127.0.0.1
+Port: 3306
+User: root
+Password: (blank)
+
+For another machine/server, edit the DB_* values in the environment or core.php defaults.

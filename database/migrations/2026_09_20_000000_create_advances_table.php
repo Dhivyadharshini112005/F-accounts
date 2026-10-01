@@ -1,0 +1,29 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        if (!Schema::hasTable('advances')) {
+            Schema::create('advances', function (Blueprint $table) {
+                $table->id();
+                $table->string('employee_name');
+                $table->decimal('amount', 12, 2);
+                $table->enum('payment_mode', ['cash', 'account']);
+                $table->string('upi_id')->nullable();
+                $table->date('advance_date');
+                $table->string('description')->nullable();
+                $table->timestamps();
+            });
+        }
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('advances');
+    }
+};

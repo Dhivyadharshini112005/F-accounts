@@ -88,39 +88,19 @@
         appearance: textfield;
     }
 
-    .payment-box {
-        grid-column: 1 / -1;
+    .inline-payment {
+        margin-top: 14px;
+        padding: 14px 16px;
         background: #f8fafc;
         border: 1px solid #dbe3ed;
-        border-radius: 12px;
-        padding: 26px;
-    }
-
-    .payment-title {
-        font-size: 18px;
-        font-weight: 800;
-        color: #111827;
-        margin-bottom: 22px;
-    }
-
-    .payment-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 26px;
-    }
-
-    .payment-section {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 11px;
-        padding: 20px;
+        border-radius: 10px;
     }
 
     .payment-section-title {
         font-size: 14px;
         font-weight: 800;
         color: #111827;
-        margin-bottom: 16px;
+        margin-bottom: 12px;
     }
 
     .payment-options {
@@ -228,12 +208,7 @@
     @media (max-width: 700px) {
 
         .form-grid,
-        .payment-grid {
-            grid-template-columns: 1fr;
-        }
-
         .form-group.full,
-        .payment-box,
         .total-box,
         .form-actions {
             grid-column: auto;
@@ -343,11 +318,7 @@
                 {{-- FEES AMOUNT --}}
 
                 <div class="form-group">
-
-                    <label for="fees_amount">
-                        Fees Amount
-                    </label>
-
+                    <label for="fees_amount">Fees Amount</label>
                     <input
                         type="number"
                         name="fees_amount"
@@ -359,18 +330,29 @@
                         placeholder="Enter Fees Amount"
                         required
                     >
-
                 </div>
 
+                {{-- ATTACHMENT AMOUNT --}}
+
+                <div class="form-group">
+                    <label for="attachment_amount">Attachment Amount</label>
+                    <input
+                        type="number"
+                        name="attachment_amount"
+                        id="attachment_amount"
+                        class="form-control"
+                        value="{{ old('attachment_amount') }}"
+                        min="0"
+                        step="0.01"
+                        placeholder="Enter Attachment Amount"
+                        required
+                    >
+                </div>
 
                 {{-- GST AMOUNT --}}
 
                 <div class="form-group">
-
-                    <label for="gst_amount">
-                        GST Amount
-                    </label>
-
+                    <label for="gst_amount">GST Amount</label>
                     <input
                         type="number"
                         name="gst_amount"
@@ -380,185 +362,52 @@
                         min="0"
                         step="0.01"
                         placeholder="Enter GST Amount"
+                        required
                     >
-
                 </div>
 
+                {{-- COMMON PAYMENT MODE --}}
 
-                {{-- PAYMENT MODE --}}
+                <div class="form-group">
+                    <div class="inline-payment">
+                        <div class="payment-section-title">Payment Mode</div>
 
-                <div class="payment-box">
-
-                    <div class="payment-title">
-                        Payment Mode
-                    </div>
-
-
-                    <div class="payment-grid">
-
-
-                        {{-- FEES PAYMENT --}}
-
-                        <div class="payment-section">
-
-                            <div class="payment-section-title">
-                                Fees Payment
-                            </div>
-
-
-                            <div class="payment-options">
-
-                                <label class="payment-option">
-
-                                    <input
-                                        type="radio"
-                                        name="fees_payment_mode"
-                                        value="cash"
-                                        {{ old('fees_payment_mode') === 'cash' ? 'checked' : '' }}
-                                        required
-                                    >
-
-                                    Cash
-
-                                </label>
-
-
-                                <label class="payment-option">
-
-                                    <input
-                                        type="radio"
-                                        name="fees_payment_mode"
-                                        value="account"
-                                        {{ old('fees_payment_mode') === 'account' ? 'checked' : '' }}
-                                    >
-
-                                    A/C
-
-                                </label>
-
-                            </div>
-
-
-                            {{-- FEES UPI --}}
-
-                            <div
-                                id="feesUpiBox"
-                                class="upi-box {{ old('fees_payment_mode') === 'account' ? 'show' : '' }}"
-                            >
-
-                                <label for="fees_upi_id">
-
-                                    Fees UPI ID
-
-                                </label>
-
-
+                        <div class="payment-options">
+                            <label class="payment-option">
                                 <input
-                                    type="text"
-                                    name="fees_upi_id"
-                                    id="fees_upi_id"
-                                    class="form-control"
-                                    value="{{ old('fees_upi_id') }}"
-                                    placeholder="Enter Fees UPI ID"
+                                    type="radio"
+                                    name="payment_mode"
+                                    value="cash"
+                                    {{ old('payment_mode', 'cash') === 'cash' ? 'checked' : '' }}
+                                    required
                                 >
+                                Cash
+                            </label>
 
-                            </div>
-
+                            <label class="payment-option">
+                                <input
+                                    type="radio"
+                                    name="payment_mode"
+                                    value="account"
+                                    {{ old('payment_mode') === 'account' ? 'checked' : '' }}
+                                >
+                                A/C
+                            </label>
                         </div>
 
-
-
-                        {{-- GST PAYMENT --}}
-
-                        <div class="payment-section">
-
-                            <div class="payment-section-title">
-                                GST Payment
-                            </div>
-
-
-                            <div class="payment-options">
-
-                                <label class="payment-option">
-
-                                    <input
-                                        type="radio"
-                                        name="gst_payment_mode"
-                                        value="cash"
-                                        {{ old('gst_payment_mode') === 'cash' ? 'checked' : '' }}
-                                        required
-                                    >
-
-                                    Cash
-
-                                </label>
-
-
-                                <label class="payment-option">
-
-                                    <input
-                                        type="radio"
-                                        name="gst_payment_mode"
-                                        value="account"
-                                        {{ old('gst_payment_mode') === 'account' ? 'checked' : '' }}
-                                    >
-
-                                    A/C
-
-                                </label>
-
-                            </div>
-
-
-                            {{-- GST UPI --}}
-
-                            <div
-                                id="gstUpiBox"
-                                class="upi-box {{ old('gst_payment_mode') === 'account' ? 'show' : '' }}"
+                        <div id="commonUpiBox" class="upi-box {{ old('payment_mode') === 'account' ? 'show' : '' }}">
+                            <label for="common_upi_id">UPI ID</label>
+                            <input
+                                type="text"
+                                name="common_upi_id"
+                                id="common_upi_id"
+                                class="form-control"
+                                value="{{ old('common_upi_id') }}"
+                                placeholder="Enter UPI ID"
                             >
-
-                                <label for="gst_upi_id">
-
-                                    GST UPI ID
-
-                                </label>
-
-
-                                <input
-                                    type="text"
-                                    name="gst_upi_id"
-                                    id="gst_upi_id"
-                                    class="form-control"
-                                    value="{{ old('gst_upi_id') }}"
-                                    placeholder="Enter GST UPI ID"
-                                >
-
-                            </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
-
-                {{-- DESCRIPTION --}}
-
-                <div class="form-group full">
-
-                    <label for="description">
-                        Description
-                    </label>
-
-                    <textarea
-                        name="description"
-                        id="description"
-                        class="form-control"
-                        placeholder="Enter description (optional)"
-                    >{{ old('description') }}</textarea>
-
-                </div>
-
 
                 {{-- TOTAL AMOUNT --}}
 
@@ -616,6 +465,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const feesAmount =
         document.getElementById('fees_amount');
 
+    const attachmentAmount =
+        document.getElementById('attachment_amount');
+
     const gstAmount =
         document.getElementById('gst_amount');
 
@@ -623,18 +475,11 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('totalAmount');
 
 
-    const feesUpiBox =
-        document.getElementById('feesUpiBox');
+    const commonUpiBox =
+        document.getElementById('commonUpiBox');
 
-    const gstUpiBox =
-        document.getElementById('gstUpiBox');
-
-
-    const feesUpiInput =
-        document.getElementById('fees_upi_id');
-
-    const gstUpiInput =
-        document.getElementById('gst_upi_id');
+    const commonUpiInput =
+        document.getElementById('common_upi_id');
 
 
     /*
@@ -648,11 +493,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const fees =
             parseFloat(feesAmount.value) || 0;
 
+        const attachment =
+            parseFloat(attachmentAmount.value) || 0;
+
         const gst =
             parseFloat(gstAmount.value) || 0;
 
         const total =
-            fees + gst;
+            fees + attachment + gst;
 
         totalAmount.textContent =
             '₹' + total.toFixed(2);
@@ -661,75 +509,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
-    | FEES PAYMENT
+    | COMMON PAYMENT MODE
     |--------------------------------------------------------------------------
     */
 
-    function updateFeesPayment() {
+    function updateCommonPayment() {
 
         const selected =
             document.querySelector(
-                'input[name="fees_payment_mode"]:checked'
+                'input[name="payment_mode"]:checked'
             );
 
+        const isAccount =
+            selected && selected.value === 'account';
 
-        if (
-            selected &&
-            selected.value === 'account'
-        ) {
-
-            feesUpiBox.classList.add('show');
-
-            feesUpiInput.required = true;
-
+        if (isAccount) {
+            commonUpiBox.classList.add('show');
+            commonUpiInput.required = true;
         } else {
-
-            feesUpiBox.classList.remove('show');
-
-            feesUpiInput.required = false;
-
-            feesUpiInput.value = '';
-
+            commonUpiBox.classList.remove('show');
+            commonUpiInput.required = false;
+            commonUpiInput.value = '';
         }
-
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GST PAYMENT
-    |--------------------------------------------------------------------------
-    */
-
-    function updateGstPayment() {
-
-        const selected =
-            document.querySelector(
-                'input[name="gst_payment_mode"]:checked'
-            );
-
-
-        if (
-            selected &&
-            selected.value === 'account'
-        ) {
-
-            gstUpiBox.classList.add('show');
-
-            gstUpiInput.required = true;
-
-        } else {
-
-            gstUpiBox.classList.remove('show');
-
-            gstUpiInput.required = false;
-
-            gstUpiInput.value = '';
-
-        }
-
-    }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -743,6 +545,8 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
 
+    attachmentAmount.addEventListener('input', updateTotal);
+
     gstAmount.addEventListener(
         'input',
         updateTotal
@@ -750,30 +554,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     document
-        .querySelectorAll(
-            'input[name="fees_payment_mode"]'
-        )
+        .querySelectorAll('input[name="payment_mode"]')
         .forEach(function (input) {
-
             input.addEventListener(
                 'change',
-                updateFeesPayment
+                updateCommonPayment
             );
-
-        });
-
-
-    document
-        .querySelectorAll(
-            'input[name="gst_payment_mode"]'
-        )
-        .forEach(function (input) {
-
-            input.addEventListener(
-                'change',
-                updateGstPayment
-            );
-
         });
 
 
@@ -785,9 +571,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     updateTotal();
 
-    updateFeesPayment();
-
-    updateGstPayment();
+    updateCommonPayment();
 
 });
 

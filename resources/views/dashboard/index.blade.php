@@ -1073,6 +1073,7 @@
 
         {{-- BALANCE --}}
 
+        @if(strtoupper(auth()->user()->role ?? '') === 'OWNER')
         <button type="button" class="summary-card balance-card payment-summary-trigger" id="mainBalanceCard" onclick="openPaymentBreakdown('balance')" aria-label="View Cash and A/C balance breakdown">
 
             <div class="card-label">
@@ -1092,6 +1093,27 @@
             </div>
 
         </button>
+        @else
+        <div class="summary-card balance-card non-clickable-balance" id="mainBalanceCard">
+
+            <div class="card-label">
+                Balance
+            </div>
+
+            <div class="card-value">
+                ₹{{ number_format((float)$cashBalance, 2) }}
+            </div>
+
+            <div class="card-description">
+                Current cash balance
+            </div>
+
+            <div class="card-icon">
+                ₹
+            </div>
+
+        </div>
+        @endif
 
 
         {{-- NET PROFIT / LOSS --}}
@@ -1149,6 +1171,7 @@
         </div>
 
 
+        @if(strtoupper(auth()->user()->role ?? '') === 'OWNER')
         {{-- A/C BALANCE --}}
         <div class="balance-breakdown-card account-balance-card {{ $accountBalance < 0 ? 'negative-balance-card' : '' }}">
 
@@ -1169,6 +1192,7 @@
             </div>
 
         </div>
+        @endif
 
     </div>
 
@@ -1190,10 +1214,12 @@
                     <div class="payment-label">Cash</div>
                     <div class="payment-value">₹{{ number_format((float)($cashIncome ?? 0), 2) }}</div>
                 </div>
+                @if(strtoupper(auth()->user()->role ?? '') === 'OWNER')
                 <div class="payment-box income-payment">
                     <div class="payment-label">A/C</div>
                     <div class="payment-value">₹{{ number_format((float)($accountIncome ?? 0), 2) }}</div>
                 </div>
+                @endif
             </div>
         </div>
 
@@ -1207,10 +1233,12 @@
                     <div class="payment-label">Cash</div>
                     <div class="payment-value">₹{{ number_format((float)($cashExpense ?? 0), 2) }}</div>
                 </div>
+                @if(strtoupper(auth()->user()->role ?? '') === 'OWNER')
                 <div class="payment-box expense-payment">
                     <div class="payment-label">A/C</div>
                     <div class="payment-value">₹{{ number_format((float)($accountExpense ?? 0), 2) }}</div>
                 </div>
+                @endif
             </div>
         </div>
 
@@ -1729,14 +1757,23 @@
         <h3 id="paymentBreakdownTitle">Payment Breakdown</h3>
         <p id="paymentBreakdownSubtitle" class="payment-breakdown-subtitle"></p>
         <div class="payment-breakdown-grid">
-            <div class="payment-breakdown-item">
+            <button type="button" class="payment-breakdown-item" id="paymentCashButton" onclick="openIncomeComponent('cash')">
                 <div class="label">Cash</div>
                 <div id="paymentCashValue" class="value">₹0.00</div>
-            </div>
-            <div class="payment-breakdown-item">
+            </button>
+            @if(strtoupper(auth()->user()->role ?? '') === 'OWNER')
+            <button type="button" class="payment-breakdown-item" id="paymentAccountButton" onclick="openIncomeComponent('account')">
                 <div class="label">A/C</div>
                 <div id="paymentAccountValue" class="value">₹0.00</div>
-            </div>
+            </button>
+            @endif
+        </div>
+        <div id="incomeComponentDetails" style="display:none;margin-top:16px;padding:16px;border-top:1px solid #e5e7eb;">
+            <h4 id="incomeComponentTitle" style="margin:0 0 12px;">Income Breakdown</h4>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;"><span>Fees</span><strong id="incomeFeesDetail">₹0.00</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;"><span>Attachment</span><strong id="incomeAttachmentDetail">₹0.00</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;"><span>GST</span><strong id="incomeGstDetail">₹0.00</strong></div>
+            <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid #e5e7eb;margin-top:5px;"><strong>Total</strong><strong id="incomeComponentTotal">₹0.00</strong></div>
         </div>
         <div class="payment-breakdown-total">
             <span>Total</span>
@@ -1746,6 +1783,11 @@
 </div>
 
 <script>
+const incomeComponents = {
+    cash: { fees: Number({{ (float)($cashFees ?? 0) }}), attachment: Number({{ (float)($cashAttachment ?? 0) }}), gst: Number({{ (float)($cashGst ?? 0) }}) },
+    account: { fees: Number({{ (float)($accountFees ?? 0) }}), attachment: Number({{ (float)($accountAttachment ?? 0) }}), gst: Number({{ (float)($accountGst ?? 0) }}) }
+};
+
 const paymentBreakdown = {
     income: {
         title: 'Total Income',
@@ -1784,6 +1826,18 @@ function openPaymentBreakdown(type) {
     document.getElementById('paymentTotalValue').textContent = money(data.total);
     document.getElementById('paymentBreakdownOverlay').classList.add('show');
     document.body.style.overflow = 'hidden';
+}
+
+
+function openIncomeComponent(type) {
+    const data = incomeComponents[type];
+    if (!data) return;
+    document.getElementById('incomeComponentTitle').textContent = type === 'cash' ? 'Cash Income Breakdown' : 'A/C Income Breakdown';
+    document.getElementById('incomeFeesDetail').textContent = money(data.fees);
+    document.getElementById('incomeAttachmentDetail').textContent = money(data.attachment);
+    document.getElementById('incomeGstDetail').textContent = money(data.gst);
+    document.getElementById('incomeComponentTotal').textContent = money(data.fees + data.attachment + data.gst);
+    document.getElementById('incomeComponentDetails').style.display = 'block';
 }
 
 function closePaymentBreakdown(event) {

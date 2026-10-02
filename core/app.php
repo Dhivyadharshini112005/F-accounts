@@ -28,8 +28,14 @@ function dashboard_action(): void {
     $totalAdvance=(float)$db->scalar("SELECT COALESCE(SUM(amount),0) FROM advances");
     $totalExpense=$totalExpenseOnly+$totalAdvance;
     $balance=$totalIncome-$totalExpense;
-    $cashIncome=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN fees_payment_mode='cash' THEN fees_amount ELSE 0 END),0)+COALESCE(SUM(CASE WHEN gst_payment_mode='cash' THEN gst_amount ELSE 0 END),0) FROM incomes");
-    $accountIncome=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN fees_payment_mode='account' THEN fees_amount ELSE 0 END),0)+COALESCE(SUM(CASE WHEN gst_payment_mode='account' THEN gst_amount ELSE 0 END),0) FROM incomes");
+    $cashFees=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN fees_payment_mode='cash' THEN fees_amount ELSE 0 END),0) FROM incomes");
+    $cashAttachment=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN attachment_payment_mode='cash' THEN attachment_amount ELSE 0 END),0) FROM incomes");
+    $cashGst=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN gst_payment_mode='cash' THEN gst_amount ELSE 0 END),0) FROM incomes");
+    $accountFees=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN fees_payment_mode='account' THEN fees_amount ELSE 0 END),0) FROM incomes");
+    $accountAttachment=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN attachment_payment_mode='account' THEN attachment_amount ELSE 0 END),0) FROM incomes");
+    $accountGst=(float)$db->scalar("SELECT COALESCE(SUM(CASE WHEN gst_payment_mode='account' THEN gst_amount ELSE 0 END),0) FROM incomes");
+    $cashIncome=$cashFees+$cashAttachment+$cashGst;
+    $accountIncome=$accountFees+$accountAttachment+$accountGst;
     $cashExpense=(float)$db->scalar("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE payment_mode='cash'");
     $accountExpense=(float)$db->scalar("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE payment_mode='account'");
     $cashAdvance=(float)$db->scalar("SELECT COALESCE(SUM(amount),0) FROM advances WHERE payment_mode='cash'");
@@ -62,7 +68,7 @@ function dashboard_action(): void {
     }
     $trendMax=1;
     foreach($monthlyTrend as $t) $trendMax=max($trendMax,(float)$t['income'],(float)$t['expense']);
-    view('dashboard.index',compact('totalIncome','totalExpense','totalExpenseOnly','totalAdvance','balance','totalDrivers','cashIncome','accountIncome','cashExpense','accountExpense','cashAdvance','accountAdvance','cashBalance','accountBalance','recentIncome','recentExpense','month','monthDisplay','availableMonths','selectedMonth','monthly','monthlyTrend','trendMax'));
+    view('dashboard.index',compact('totalIncome','totalExpense','totalExpenseOnly','totalAdvance','balance','totalDrivers','cashIncome','accountIncome','cashFees','cashAttachment','cashGst','accountFees','accountAttachment','accountGst','cashExpense','accountExpense','cashAdvance','accountAdvance','cashBalance','accountBalance','recentIncome','recentExpense','month','monthDisplay','availableMonths','selectedMonth','monthly','monthlyTrend','trendMax'));
 }
 
 function login_action(): void {
@@ -118,26 +124,31 @@ function drivers_payment(int $id): void {
 function income_index(): void {
     require_auth(); $search=trim((string)($_GET['search']??''));
     $sql="SELECT * FROM incomes"; $params=[];
-    if($search!==''){ $sql.=" WHERE (driver_id LIKE ? OR description LIKE ? OR fees_amount LIKE ? OR gst_amount LIKE ? OR total_amount LIKE ? OR amount LIKE ? OR income_date LIKE ?)"; $like="%$search%"; $params=array_fill(0,7,$like); }
+    if($search!==''){ $sql.=" WHERE (driver_id LIKE ? OR description LIKE ? OR fees_amount LIKE ? OR attachment_amount LIKE ? OR gst_amount LIKE ? OR total_amount LIKE ? OR amount LIKE ? OR income_date LIKE ?)"; $like="%$search%"; $params=array_fill(0,8,$like); }
     $sql.=" ORDER BY income_date DESC,id DESC";
     $rows=with_driver($GLOBALS['db']->all($sql,$params),$GLOBALS['db']); view('income.index',['incomes'=>rows_to_collection($rows)]);
 }
 function income_create(): void { require_auth(); $drivers=rows_to_collection($GLOBALS['db']->all("SELECT * FROM drivers ORDER BY name")); view('income.create',compact('drivers')); }
 function income_store(): void {
     require_auth(); verify_csrf();
-    $errors=validate_required(['driver_id'=>'Driver','fees_amount'=>'Fees amount','fees_payment_mode'=>'Fees payment mode','gst_payment_mode'=>'GST payment mode','income_date'=>'Income date']);
+    $errors=validate_required(['driver_id'=>'Driver','fees_amount'=>'Fees amount','attachment_amount'=>'Attachment amount','payment_mode'=>'Payment mode','income_date'=>'Income date']);
     if($errors) fail_validation($errors);
-    if(!in_array($_POST['fees_payment_mode'],['cash','account'],true)||!in_array($_POST['gst_payment_mode'],['cash','account'],true)) fail_validation(['payment_mode'=>['Invalid payment mode.']]);
-    $fees=(float)$_POST['fees_amount']; $gst=(float)($_POST['gst_amount']??0); $total=$fees+$gst;
-    $GLOBALS['db']->insert("INSERT INTO incomes (driver_id,fees_amount,gst_amount,amount,total_amount,fees_payment_mode,gst_payment_mode,fees_upi_id,gst_upi_id,income_date,description,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",[
-      (int)$_POST['driver_id'],$fees,$gst,$total,$total,$_POST['fees_payment_mode'],$_POST['gst_payment_mode'],value_or_null($_POST['fees_upi_id']??null),value_or_null($_POST['gst_upi_id']??null),$_POST['income_date'],value_or_null($_POST['description']??null)]);
+    if(!in_array($_POST['payment_mode'],['cash','account'],true)) fail_validation(['payment_mode'=>['Invalid payment mode.']]);
+    $fees=(float)$_POST['fees_amount']; $attachment=(float)($_POST['attachment_amount']??0); $gst=(float)($_POST['gst_amount']??0); $total=$fees+$attachment+$gst;
+    $paymentMode=$_POST['payment_mode'];
+    $commonUpi=value_or_null($_POST['common_upi_id']??null);
+    $GLOBALS['db']->insert("INSERT INTO incomes (driver_id,fees_amount,attachment_amount,gst_amount,amount,total_amount,fees_payment_mode,attachment_payment_mode,gst_payment_mode,fees_upi_id,attachment_upi_id,gst_upi_id,income_date,description,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())",[
+      (int)$_POST['driver_id'],$fees,$attachment,$gst,$total,$total,$paymentMode,$paymentMode,$paymentMode,$commonUpi,$commonUpi,$commonUpi,$_POST['income_date'],value_or_null($_POST['description']??null)]);
     flash('success','Income added successfully.'); redirect_to(route('income.index'));
 }
 function income_edit(int $id): void { require_owner(); $income=$GLOBALS['db']->first("SELECT * FROM incomes WHERE id=?",[$id]); if(!$income){http_response_code(404);exit('Income not found');} $drivers=rows_to_collection($GLOBALS['db']->all("SELECT * FROM drivers ORDER BY name")); view('income.edit',compact('income','drivers')); }
 function income_update(int $id): void {
-    require_owner(); verify_csrf(); $errors=validate_required(['driver_id'=>'Driver','fees_amount'=>'Fees amount','fees_payment_mode'=>'Fees payment mode','gst_payment_mode'=>'GST payment mode','income_date'=>'Income date']); if($errors) fail_validation($errors);
-    $fees=(float)$_POST['fees_amount'];$gst=(float)($_POST['gst_amount']??0);$total=$fees+$gst;
-    $GLOBALS['db']->execute("UPDATE incomes SET driver_id=?,fees_amount=?,gst_amount=?,amount=?,total_amount=?,fees_payment_mode=?,gst_payment_mode=?,fees_upi_id=?,gst_upi_id=?,income_date=?,description=?,updated_at=NOW() WHERE id=?",[(int)$_POST['driver_id'],$fees,$gst,$total,$total,$_POST['fees_payment_mode'],$_POST['gst_payment_mode'],value_or_null($_POST['fees_upi_id']??null),value_or_null($_POST['gst_upi_id']??null),$_POST['income_date'],value_or_null($_POST['description']??null),$id]);
+    require_owner(); verify_csrf(); $errors=validate_required(['driver_id'=>'Driver','fees_amount'=>'Fees amount','attachment_amount'=>'Attachment amount','payment_mode'=>'Payment mode','income_date'=>'Income date']); if($errors) fail_validation($errors);
+    if(!in_array($_POST['payment_mode'],['cash','account'],true)) fail_validation(['payment_mode'=>['Invalid payment mode.']]);
+    $fees=(float)$_POST['fees_amount'];$attachment=(float)($_POST['attachment_amount']??0);$gst=(float)($_POST['gst_amount']??0);$total=$fees+$attachment+$gst;
+    $paymentMode=$_POST['payment_mode'];
+    $commonUpi=value_or_null($_POST['common_upi_id']??null);
+    $GLOBALS['db']->execute("UPDATE incomes SET driver_id=?,fees_amount=?,attachment_amount=?,gst_amount=?,amount=?,total_amount=?,fees_payment_mode=?,attachment_payment_mode=?,gst_payment_mode=?,fees_upi_id=?,attachment_upi_id=?,gst_upi_id=?,income_date=?,description=?,updated_at=NOW() WHERE id=?",[(int)$_POST['driver_id'],$fees,$attachment,$gst,$total,$total,$paymentMode,$paymentMode,$paymentMode,$commonUpi,$commonUpi,$commonUpi,$_POST['income_date']??($_POST['date']??null),value_or_null($_POST['description']??null),$id]);
     flash('success','Income updated successfully.'); redirect_to(route('income.index'));
 }
 function income_delete(int $id): void { require_owner(); verify_csrf(); $GLOBALS['db']->execute("DELETE FROM incomes WHERE id=?",[$id]); flash('success','Income deleted successfully.'); redirect_to(route('income.index')); }
@@ -151,8 +162,9 @@ function expense_create(): void { require_auth(); view('expenses.create'); }
 function expense_store(): void {
     require_auth();verify_csrf();$errors=validate_required(['expense_name'=>'Expense name','amount'=>'Amount','payment_mode'=>'Payment mode','expense_date'=>'Expense date']);if($errors)fail_validation($errors);
     $category=value_or_null($_POST['category']??null);
+    $type=$category??trim((string)$_POST['expense_name']);
     $GLOBALS['db']->insert("INSERT INTO expenses (expense_name,expense_type,amount,payment_mode,upi_id,date,expense_date,category,description,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NOW(),NOW())",[
-      trim((string)$_POST['expense_name']),(float)$_POST['amount'],$_POST['payment_mode'],value_or_null($_POST['upi_id']??null),$_POST['expense_date'],$_POST['expense_date'],$category,value_or_null($_POST['description']??null)]);
+      trim((string)$_POST['expense_name']),$type,(float)$_POST['amount'],$_POST['payment_mode'],value_or_null($_POST['upi_id']??null),$_POST['expense_date'],$_POST['expense_date'],$category,value_or_null($_POST['description']??null)]);
     flash('success','Expense added successfully.');redirect_to(route('expenses.index'));
 }
 function expense_edit(int $id): void { require_owner();$expense=$GLOBALS['db']->first("SELECT * FROM expenses WHERE id=?",[$id]);if(!$expense){http_response_code(404);exit('Expense not found');}view('expenses.edit',compact('expense')); }

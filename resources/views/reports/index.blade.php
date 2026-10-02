@@ -1148,7 +1148,7 @@
             </div>
 
 
-            @if($expenseCategories->count() > 0)
+            @if(count($expenseCategories) > 0)
 
                 <div class="category-list">
 

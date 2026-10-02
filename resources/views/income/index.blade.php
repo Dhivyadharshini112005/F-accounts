@@ -150,6 +150,15 @@
         border-bottom: 0;
     }
 
+    .payment-info {
+        display: inline-block;
+        margin-left: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        white-space: nowrap;
+    }
+
     .amount {
         font-weight: 700;
         color: #111827;
@@ -254,7 +263,7 @@
             </div>
 
             <div class="search-help">
-                Search by Driver ID, description, fees amount, GST amount,
+                Search by Driver ID, description, fees amount, attachment amount, GST amount,
                 total amount or date.
             </div>
 
@@ -277,6 +286,7 @@
                         <th>Driver ID</th>
                         <th>Description</th>
                         <th>Fees Amount</th>
+                        <th>Attachment Amount</th>
                         <th>GST Amount</th>
                         <th>Total Amount</th>
 
@@ -310,10 +320,29 @@
 
                             <td class="amount">
                                 ₹{{ number_format((float)($income->fees_amount ?? $income->amount ?? 0), 2) }}
+                                @if(strtolower((string)($income->fees_payment_mode ?? '')) === 'account')
+                                    <span class="payment-info">({{ $income->fees_upi_id ?? '-' }})</span>
+                                @else
+                                    <span class="payment-info">(Cash)</span>
+                                @endif
+                            </td>
+
+                            <td class="amount">
+                                ₹{{ number_format((float)($income->attachment_amount ?? 0), 2) }}
+                                @if(strtolower((string)($income->attachment_payment_mode ?? '')) === 'account')
+                                    <span class="payment-info">({{ $income->attachment_upi_id ?? '-' }})</span>
+                                @else
+                                    <span class="payment-info">(Cash)</span>
+                                @endif
                             </td>
 
                             <td class="amount">
                                 ₹{{ number_format((float)($income->gst_amount ?? 0), 2) }}
+                                @if(strtolower((string)($income->gst_payment_mode ?? '')) === 'account')
+                                    <span class="payment-info">({{ $income->gst_upi_id ?? '-' }})</span>
+                                @else
+                                    <span class="payment-info">(Cash)</span>
+                                @endif
                             </td>
 
                             <td class="amount">

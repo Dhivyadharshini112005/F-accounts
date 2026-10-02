@@ -13,3 +13,6 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+README_*.txt
+taxi-accounts-core.zip
+taxi-accounts-core_flash_fixed/
